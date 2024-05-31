@@ -81,7 +81,7 @@ abaratarAlfajor = modificarDulzor (-7) . modificarPeso (-10)
 -- Parte b
 
 renombrarAlfajor :: Nombre -> Alfajor -> Alfajor
-modificarNombre nuevoNombre alfajor = alfajor{nombre = nuevoNombre}
+renombrarAlfajor nuevoNombre alfajor = alfajor{nombre = nuevoNombre}
 
 -- Parte c
 
@@ -94,14 +94,14 @@ obtenerCapaDelMismoTipo :: Alfajor -> Relleno
 obtenerCapaDelMismoTipo alfajor = head (relleno alfajor)
 
 agregarNombrePremium :: Alfajor -> Alfajor
-agregarNombrePremium alfajor = alfajor {nombre = "Premium" ++ nombre alfajor}
+agregarNombrePremium alfajor = alfajor {nombre = "Premium " ++ nombre alfajor}
 
 modificarAlfajorPremium :: Alfajor -> Alfajor
 modificarAlfajorPremium alfajor = (agregarNombrePremium . agregarCapa (obtenerCapaDelMismoTipo alfajor)) alfajor
 
 hacerPremium :: Alfajor -> Alfajor
 hacerPremium alfajor
-    |esPotable = modificarAlfajorPremium alfajor
+    |esPotable alfajor = modificarAlfajorPremium alfajor
     |otherwise = alfajor
 
 -- Parte e
@@ -123,6 +123,7 @@ capitanCostaACosta =  (renombrarAlfajor "Capitan del Espacio Costa a Costa" . ha
 
 -- Parte 3
 
+--Ej a
 
 data Cliente = UnCliente{
     dinero :: Dinero,
@@ -132,4 +133,68 @@ data Cliente = UnCliente{
 
 type Criterio = Alfajor -> Bool
 
-emi = UnCliente 120 [capitanDelEspacio] [contieneMarca "Capitan del Espacio"]
+emi :: Cliente
+emi = UnCliente 120 [] [buscaMarca "Capitan del Espacio"]
+
+tomi :: Cliente
+tomi = UnCliente 1000 [] [esPretencioso, esDulcero]
+
+dante :: Cliente
+dante = UnCliente 200 [] [noTieneCiertoRelleno DulceDeLeche, esExtraño]
+
+juan :: Cliente
+juan = UnCliente 500 [] [esDulcero, buscaMarca "Jorgito", esPretencioso, noTieneCiertoRelleno Mousse]
+
+contieneEnElNombre :: String -> String -> Bool
+contieneEnElNombre [] _ = True
+contieneEnElNombre _ [] = False
+contieneEnElNombre (p:ps) (s:ss)
+  | p == s = contieneEnElNombre ps ss
+  | otherwise = contieneEnElNombre (p:ps) ss
+
+buscaMarca :: Nombre -> Criterio
+buscaMarca marca alfajor = contieneEnElNombre marca (nombre alfajor)
+
+esPretencioso :: Criterio
+esPretencioso alfajor = contieneEnElNombre "Premium" (nombre alfajor)
+
+esDulcero :: Criterio
+esDulcero = (>0.15) . dulzorInnato
+
+noTieneCiertoRelleno :: Relleno ->Criterio
+noTieneCiertoRelleno rellenoBuscado alfajor = not $ elem rellenoBuscado (relleno alfajor)
+
+esExtraño :: Criterio
+esExtraño alfajor = not (esPotable alfajor)
+
+--Ej b
+
+type Alfajores = [Alfajor]
+
+leGustaAlfajor :: Cliente -> Alfajor -> Bool
+leGustaAlfajor cliente alfajor  = all ($ alfajor) (criterio cliente)
+
+alfajoresQueLeGustanCliente :: Alfajores -> Cliente -> Alfajores
+alfajoresQueLeGustanCliente alfajores cliente = filter (leGustaAlfajor cliente) alfajores
+
+--Ej c
+
+comprarAlfajor :: Alfajor -> Cliente -> Cliente
+comprarAlfajor alfajor cliente
+    |puedeComprarAlfajor alfajor cliente = (modificarDinero alfajor . agregarAlfajorComprado alfajor) cliente
+    |otherwise = cliente
+
+
+agregarAlfajorComprado ::  Alfajor -> Cliente -> Cliente
+agregarAlfajorComprado alfajor cliente = cliente {alfajoresComprados = alfajoresComprados cliente ++ [alfajor]}
+
+modificarDinero :: Alfajor -> Cliente -> Cliente
+modificarDinero alfajor cliente = cliente {dinero = dinero cliente - precioAlfajor alfajor}
+
+puedeComprarAlfajor ::  Alfajor -> Cliente -> Bool
+puedeComprarAlfajor alfajor cliente = dinero cliente >= precioAlfajor alfajor 
+
+--Ej d
+
+comprarAlfajoresGustanCliente ::  Alfajores -> Cliente -> Cliente
+comprarAlfajoresGustanCliente alfajores cliente = foldl (flip comprarAlfajor) cliente (alfajoresQueLeGustanCliente alfajores cliente)
